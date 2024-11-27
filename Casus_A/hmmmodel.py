@@ -1,11 +1,7 @@
 #!/usr/bin/python3
 import random
-from logging import logMultiprocessing
 
 import numpy as np
-from fontTools.misc.cython import returns
-from orca.orca import start
-from orca.settings import startingProfile
 
 
 class HiddenMarkovModel:
@@ -44,22 +40,66 @@ class HiddenMarkovModel:
 
         return states, emissions
 
+
+    def score(self, emissions, states):
+        self.not_empty()
+
+        logprob = np.log(self.startprob_[states[0]] * self.emissionprob_[states[0]][emissions[0]])
+
+        for i in range(len(emissions) - 1):
+            transition_prob = self.transmat_[states[i]][states[i + 1]]
+            emission_prob = self.emissionprob_[states[i + 1]][emissions[i + 1]]
+
+            logprob += np.log(transition_prob) + np.log(emission_prob)
+
+        return logprob
+
     def not_empty(self):
         assert self.startprob_ is not None
         assert self.transmat_ is not None
         assert self.emissionprob_ is not None
         return True
 
-    def score(self, emissions, states):
+    def predict(self, emissions):
         self.not_empty()
-        logprob = np.log(self.startprob_[states[0]] * self.emissionprob_[self.startprob_[states[0]]][emissions[0]]) # Start
-        for i in range(len(emissions) - 1):
-            # transmat kans
-            self.transmat_[states[i]][0]
-            # emission prob
-            self.emissionprob_[states[i+1]][emissions[i+1]]
-            logprob += np.log()
+        if emissions is None or emissions == []:
+            return []
 
-        return logprob
+        n_rounds = len(emissions)
 
+        # opslaan voor viterbi
+        viterbi = [[0] * self.n_components for _ in range(n_rounds)]
+        previous_max = [[None] * self.n_components for _ in range(n_rounds)]
 
+        # beurt 1
+        curr_emission = emissions[0]
+        for i in range(self.n_components):
+            viterbi[0][i] = self.startprob_[i] * self.emissionprob_[i][curr_emission] # fix me
+
+        # alle andere beurten
+        for i in range(1, n_rounds):
+            curr_emission = emissions[i]
+            for t in range(self.n_components):
+                max_prob = 0
+                max_prev_state = 0
+                for p in range(self.n_components):
+                    previous = viterbi[i-1][p]
+                    trans_prob = self.transmat_[p][t]
+                    emission_prob = self.emissionprob_[t][curr_emission]
+                    prob = previous * trans_prob * emission_prob
+                    if prob > max_prob:
+                        max_prob = prob
+                        max_prev_state = p
+                viterbi[i][t] = max_prob
+                previous_max[i][t] = max_prev_state
+
+        # bepaal laatste tafel
+        final_state = max(range(self.n_components), key=lambda t: viterbi[-1][t])
+
+        # achterstevoren de states terug gaan
+        best_path = [final_state + 1]
+        for i in range(n_rounds - 1, 0, -1):
+            final_state = previous_max[i][final_state]
+            best_path.insert(0, final_state + 1)
+
+        return best_path
