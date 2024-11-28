@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import math
 import random
 
 import numpy as np
@@ -68,25 +69,25 @@ class HiddenMarkovModel:
         n_rounds = len(emissions)
 
         # opslaan voor viterbi
-        viterbi = [[0] * self.n_components for _ in range(n_rounds)]
+        viterbi = [[-math.inf] * self.n_components for _ in range(n_rounds)]
         previous_max = [[None] * self.n_components for _ in range(n_rounds)]
 
         # beurt 1
         curr_emission = emissions[0]
         for i in range(self.n_components):
-            viterbi[0][i] = self.startprob_[i] * self.emissionprob_[i][curr_emission] # fix me
+            viterbi[0][i] = math.log(self.startprob_[i]) + math.log(self.emissionprob_[i][curr_emission]) # fix me
 
         # alle andere beurten
         for i in range(1, n_rounds):
             curr_emission = emissions[i]
             for t in range(self.n_components):
-                max_prob = 0
+                max_prob = -math.inf
                 max_prev_state = 0
                 for p in range(self.n_components):
                     previous = viterbi[i-1][p]
-                    trans_prob = self.transmat_[p][t]
-                    emission_prob = self.emissionprob_[t][curr_emission]
-                    prob = previous * trans_prob * emission_prob
+                    trans_prob = math.log(max(self.transmat_[p][t], 1e-10))
+                    emission_prob = math.log(max(self.emissionprob_[t][curr_emission], 1e-10))
+                    prob = previous + trans_prob + emission_prob
                     if prob > max_prob:
                         max_prob = prob
                         max_prev_state = p
