@@ -86,3 +86,11 @@ Het project wordt in vijf fasen uitgevoerd: dataverzameling, datavoorbereiding, 
 ## **Verwachte Resultaten**
 - Een lijst van bestaande medicijnen die mogelijk hergebruikt kunnen worden voor de behandeling van kanker.
 - Analyse met Python-script en visualisaties voor validatie.
+
+
+
+---
+## Datasets
+
+- Count data: [https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE62944](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE62944)
+- 
